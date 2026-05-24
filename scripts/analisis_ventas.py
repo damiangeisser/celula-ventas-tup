@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import pandas as pd
 
 
@@ -9,13 +10,15 @@ import pandas as pd
 # - representar los datos como un DataFrame;
 # - revisar columnas, tipos de datos y valores faltantes;
 # - imputar valores faltantes cuando es posible;
-# - calcular indicadores comerciales mediante operaciones de agrupamiento.
+# - calcular indicadores comerciales mediante operaciones de agrupamiento;
+# - preparar los datos agregados que luego se grafican con matplotlib.
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATOS_DIR = BASE_DIR / "datos"
 RESULTADOS_DIR = BASE_DIR / "resultados"
 
 ARCHIVO_DATOS = DATOS_DIR / "ventas.csv"
+ARCHIVO_GRAFICO = RESULTADOS_DIR / "grafico_ventas_mensuales.png"
 
 COLUMNAS_REQUERIDAS = [
     "fecha",
@@ -28,10 +31,6 @@ COLUMNAS_REQUERIDAS = [
 def cargar_datos(ruta_archivo: Path) -> pd.DataFrame:
     """
     Carga el archivo CSV de ventas como DataFrame de pandas.
-
-    El DataFrame permite aplicar validaciones y transformaciones sobre columnas,
-    como convertir fechas, revisar valores nulos y preparar los datos para el
-    análisis comercial.
     """
     if not ruta_archivo.exists():
         raise FileNotFoundError(f"No se encontró el archivo de datos: {ruta_archivo}")
@@ -134,6 +133,30 @@ def calcular_indicadores(ventas: pd.DataFrame) -> dict:
     }
 
 
+def generar_grafico_ventas_mensuales(ventas_por_mes: pd.DataFrame) -> None:
+    """
+    Genera un gráfico de evolución mensual de ventas y lo guarda como imagen.
+
+    El gráfico usa el resultado agrupado por mes. De esta forma, matplotlib no
+    trabaja con las ventas fila por fila, sino con el total mensual ya calculado.
+    """
+    RESULTADOS_DIR.mkdir(exist_ok=True)
+
+    plt.figure(figsize=(8, 5))
+    plt.plot(
+        ventas_por_mes["mes"],
+        ventas_por_mes["total_venta"],
+        marker="o",
+    )
+    plt.title("Evolución mensual de ventas")
+    plt.xlabel("Mes")
+    plt.ylabel("Ventas totales")
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+    plt.savefig(ARCHIVO_GRAFICO)
+    plt.close()
+
+
 def main():
     """
     Punto de entrada del análisis de ventas.
@@ -146,14 +169,10 @@ def main():
     ventas_limpias = imputar_datos(ventas)
     indicadores = calcular_indicadores(ventas_limpias)
 
-    print("\nPrimeras filas del dataset original:")
-    print(ventas.head())
+    generar_grafico_ventas_mensuales(indicadores["ventas_por_mes"])
 
     print("\nReporte de valores nulos:")
     print(reporte_nulos)
-
-    print("\nPrimeras filas del dataset limpio:")
-    print(ventas_limpias.head())
 
     print("\nVentas totales:")
     print(indicadores["ventas_totales"])
@@ -166,6 +185,8 @@ def main():
 
     print("\nUnidades por producto:")
     print(indicadores["unidades_por_producto"])
+
+    print(f"\nGráfico generado en: {ARCHIVO_GRAFICO}")
 
 
 if __name__ == "__main__":
