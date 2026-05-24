@@ -1,0 +1,5 @@
+Resumen de indicadores comerciales
+====================================
+Ventas totales: 9721000.0
+Producto mas vendido: Mouse
+Unidades vendidas del producto mas vendido: 34.0

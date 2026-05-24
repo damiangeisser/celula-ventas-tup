@@ -11,7 +11,8 @@ import pandas as pd
 # - revisar columnas, tipos de datos y valores faltantes;
 # - imputar valores faltantes cuando es posible;
 # - calcular indicadores comerciales mediante operaciones de agrupamiento;
-# - preparar los datos agregados que luego se grafican con matplotlib.
+# - preparar datos agregados para gráficos;
+# - exportar resultados procesados a archivos dentro de /resultados.
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 DATOS_DIR = BASE_DIR / "datos"
@@ -19,6 +20,10 @@ RESULTADOS_DIR = BASE_DIR / "resultados"
 
 ARCHIVO_DATOS = DATOS_DIR / "ventas.csv"
 ARCHIVO_GRAFICO = RESULTADOS_DIR / "grafico_ventas_mensuales.png"
+ARCHIVO_REPORTE_NULOS = RESULTADOS_DIR / "reporte_nulos.csv"
+ARCHIVO_VENTAS_MES = RESULTADOS_DIR / "ventas_por_mes.csv"
+ARCHIVO_UNIDADES_PRODUCTO = RESULTADOS_DIR / "unidades_por_producto.csv"
+ARCHIVO_RESUMEN = RESULTADOS_DIR / "resumen_indicadores.txt"
 
 COLUMNAS_REQUERIDAS = [
     "fecha",
@@ -136,9 +141,6 @@ def calcular_indicadores(ventas: pd.DataFrame) -> dict:
 def generar_grafico_ventas_mensuales(ventas_por_mes: pd.DataFrame) -> None:
     """
     Genera un gráfico de evolución mensual de ventas y lo guarda como imagen.
-
-    El gráfico usa el resultado agrupado por mes. De esta forma, matplotlib no
-    trabaja con las ventas fila por fila, sino con el total mensual ya calculado.
     """
     RESULTADOS_DIR.mkdir(exist_ok=True)
 
@@ -157,6 +159,39 @@ def generar_grafico_ventas_mensuales(ventas_por_mes: pd.DataFrame) -> None:
     plt.close()
 
 
+def exportar_resultados(reporte_nulos: pd.DataFrame, indicadores: dict) -> None:
+    """
+    Exporta los resultados del análisis en archivos dentro de /resultados.
+
+    Se guardan:
+    - reporte de valores nulos;
+    - ventas agrupadas por mes;
+    - unidades vendidas por producto;
+    - resumen general de indicadores comerciales.
+    """
+    RESULTADOS_DIR.mkdir(exist_ok=True)
+
+    reporte_nulos.to_csv(ARCHIVO_REPORTE_NULOS, index=False)
+    indicadores["ventas_por_mes"].to_csv(ARCHIVO_VENTAS_MES, index=False)
+    indicadores["unidades_por_producto"].to_csv(
+        ARCHIVO_UNIDADES_PRODUCTO,
+        index=False,
+    )
+
+    producto = indicadores["producto_mas_vendido"]
+
+    resumen = [
+        "Resumen de indicadores comerciales",
+        "====================================",
+        f"Ventas totales: {indicadores['ventas_totales']}",
+        f"Producto mas vendido: {producto['producto']}",
+        f"Unidades vendidas del producto mas vendido: {producto['cantidad']}",
+        "",
+    ]
+
+    ARCHIVO_RESUMEN.write_text("\n".join(resumen), encoding="utf-8")
+
+
 def main():
     """
     Punto de entrada del análisis de ventas.
@@ -170,6 +205,7 @@ def main():
     indicadores = calcular_indicadores(ventas_limpias)
 
     generar_grafico_ventas_mensuales(indicadores["ventas_por_mes"])
+    exportar_resultados(reporte_nulos, indicadores)
 
     print("\nReporte de valores nulos:")
     print(reporte_nulos)
@@ -187,6 +223,10 @@ def main():
     print(indicadores["unidades_por_producto"])
 
     print(f"\nGráfico generado en: {ARCHIVO_GRAFICO}")
+    print(f"Reporte de nulos exportado en: {ARCHIVO_REPORTE_NULOS}")
+    print(f"Ventas por mes exportadas en: {ARCHIVO_VENTAS_MES}")
+    print(f"Unidades por producto exportadas en: {ARCHIVO_UNIDADES_PRODUCTO}")
+    print(f"Resumen exportado en: {ARCHIVO_RESUMEN}")
 
 
 if __name__ == "__main__":
